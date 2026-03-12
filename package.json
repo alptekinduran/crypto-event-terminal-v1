@@ -1,0 +1,24 @@
+{
+  "name": "crypto-event-terminal-v1",
+  "version": "1.0.0",
+  "description": "Turkce tek kullanicili kripto event terminali PWA",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "generate-vapid": "node scripts-generate-vapid.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "axios": "^1.8.4",
+    "cheerio": "^1.0.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "rss-parser": "^3.13.0",
+    "web-push": "^3.6.7"
+  }
+}
