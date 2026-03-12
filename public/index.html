@@ -13,16 +13,16 @@
     <div>
       <div class="eyebrow">Türkçe • tek kullanıcı • PWA</div>
       <h1>Crypto Event Terminal</h1>
-      <p class="muted">Ham haber değil, trade edilebilir olay akışı.</p>
+      <p class="muted">Hızlı okunur olay akışı + tüm piyasa görünümü + otomatik yenileme.</p>
     </div>
     <div class="topbar-actions">
       <button id="enablePushBtn" class="btn primary">Bildirimleri Aç</button>
-      <button id="refreshBtn" class="btn">Yenile</button>
+      <button id="refreshBtn" class="btn">Şimdi yenile</button>
       <button id="logoutBtn" class="btn ghost">Çıkış</button>
     </div>
   </header>
 
-  <main class="grid">
+  <main class="grid grid-v2">
     <section class="panel panel-watchlist">
       <div class="panel-head">
         <h2>Takip listesi</h2>
@@ -31,11 +31,42 @@
       <div id="watchlist" class="watchlist"></div>
     </section>
 
+    <section class="panel panel-market-browser">
+      <div class="panel-head panel-head-stack">
+        <div>
+          <h2>Tüm kriptolar</h2>
+          <div class="small muted">Piyasa verisi CoinGecko üzerinden sayfalı gelir. Arama tüm listede çalışır.</div>
+        </div>
+        <div class="browser-tools">
+          <input id="marketSearchInput" class="input" type="search" placeholder="Coin veya sembol ara (örn. pepe, btc, sui)">
+          <select id="marketPerPageSelect">
+            <option value="50">50</option>
+            <option value="100" selected>100</option>
+            <option value="250">250</option>
+          </select>
+        </div>
+      </div>
+      <div class="market-meta">
+        <span id="marketBrowserStatus" class="small muted">Hazırlanıyor...</span>
+        <div class="pager">
+          <button id="prevPageBtn" class="btn ghost">Önceki</button>
+          <span id="pageInfo" class="small muted">Sayfa 1</span>
+          <button id="nextPageBtn" class="btn ghost">Sonraki</button>
+        </div>
+      </div>
+      <div id="allCoins" class="all-coins"></div>
+    </section>
+
     <section class="panel panel-filters">
       <div class="panel-head">
-        <h2>Filtreler</h2>
+        <h2>Olay filtreleri</h2>
+        <span id="autoRefreshStatus" class="small muted">Otomatik yenileme aktif</span>
       </div>
       <div class="filters">
+        <label>
+          <span>Haber içinde ara</span>
+          <input id="eventSearchInput" class="input" type="search" placeholder="BTC, ETF, Binance, hack...">
+        </label>
         <label>
           <span>Minimum puan</span>
           <input id="minScoreInput" type="range" min="0" max="95" value="60">
