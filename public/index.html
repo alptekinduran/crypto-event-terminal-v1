@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b1020">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/public/styles.css">
+  <title>Crypto Event Terminal</title>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">Türkçe • tek kullanıcı • PWA</div>
+      <h1>Crypto Event Terminal</h1>
+      <p class="muted">Ham haber değil, trade edilebilir olay akışı.</p>
+    </div>
+    <div class="topbar-actions">
+      <button id="enablePushBtn" class="btn primary">Bildirimleri Aç</button>
+      <button id="refreshBtn" class="btn">Yenile</button>
+      <button id="logoutBtn" class="btn ghost">Çıkış</button>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="panel panel-watchlist">
+      <div class="panel-head">
+        <h2>Takip listesi</h2>
+        <span id="marketStatus" class="small muted">Yükleniyor...</span>
+      </div>
+      <div id="watchlist" class="watchlist"></div>
+    </section>
+
+    <section class="panel panel-filters">
+      <div class="panel-head">
+        <h2>Filtreler</h2>
+      </div>
+      <div class="filters">
+        <label>
+          <span>Minimum puan</span>
+          <input id="minScoreInput" type="range" min="0" max="95" value="60">
+          <strong id="minScoreValue">60</strong>
+        </label>
+        <label>
+          <span>Olay tipi</span>
+          <select id="typeSelect">
+            <option value="">Tümü</option>
+            <option value="listing">Listing</option>
+            <option value="delisting">Delisting</option>
+            <option value="exploit">Exploit / Hack</option>
+            <option value="enforcement">SEC / Dava</option>
+            <option value="etf">ETF</option>
+            <option value="unlock">Unlock</option>
+            <option value="mainnet">Mainnet / Upgrade</option>
+            <option value="partnership">Ortaklık</option>
+            <option value="maintenance">Bakım / Askı</option>
+            <option value="other">Diğer</option>
+          </select>
+        </label>
+        <label class="checkbox">
+          <input id="onlyWatchlistCheckbox" type="checkbox">
+          <span>Sadece takip listesi coinleri</span>
+        </label>
+        <button id="testPushBtn" class="btn">Test bildirimi gönder</button>
+      </div>
+    </section>
+
+    <section class="panel panel-feed">
+      <div class="panel-head">
+        <h2>Olay akışı</h2>
+        <span id="feedStatus" class="small muted">Hazırlanıyor...</span>
+      </div>
+      <div id="events" class="events"></div>
+    </section>
+  </main>
+
+  <template id="eventCardTemplate">
+    <article class="event-card">
+      <div class="event-top">
+        <div class="chips"></div>
+        <a class="event-link" target="_blank" rel="noreferrer">Kaynağı aç</a>
+      </div>
+      <h3 class="event-title"></h3>
+      <p class="event-summary"></p>
+      <p class="event-reason muted"></p>
+      <div class="event-meta"></div>
+    </article>
+  </template>
+
+  <script src="/public/app.js" defer></script>
+</body>
+</html>
