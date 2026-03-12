@@ -1,4 +1,9 @@
 let vapidPublicKey = '';
+let eventTimer = null;
+let marketTimer = null;
+let marketPage = 1;
+let marketPerPage = 100;
+let lastMarketQuery = '';
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -32,7 +37,15 @@ function fmtDate(value) {
 
 function fmtUsd(value) {
   if (value === null || value === undefined) return '—';
-  return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'USD', maximumFractionDigits: 4 }).format(value);
+  return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'USD', maximumFractionDigits: value > 1 ? 2 : 6 }).format(value);
+}
+
+function debounce(fn, wait = 400) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  };
 }
 
 async function loadStatus() {
@@ -43,7 +56,7 @@ async function loadStatus() {
 async function loadWatchlist() {
   const { watchlist } = await fetchJson('/api/watchlist');
   const container = document.getElementById('watchlist');
-  document.getElementById('marketStatus').textContent = `${watchlist.length} varlık`; 
+  document.getElementById('marketStatus').textContent = `${watchlist.length} varlık • otomatik`; 
   if (!watchlist.length) {
     container.innerHTML = '<div class="empty">Takip listesi boş.</div>';
     return;
@@ -62,12 +75,62 @@ async function loadWatchlist() {
   }).join('');
 }
 
+async function loadAllCoins() {
+  const query = document.getElementById('marketSearchInput').value.trim();
+  const params = new URLSearchParams({
+    page: String(marketPage),
+    perPage: String(marketPerPage),
+    query
+  });
+  const data = await fetchJson(`/api/markets?${params.toString()}`);
+  const container = document.getElementById('allCoins');
+  const status = document.getElementById('marketBrowserStatus');
+  const pageInfo = document.getElementById('pageInfo');
+  const prevBtn = document.getElementById('prevPageBtn');
+  const nextBtn = document.getElementById('nextPageBtn');
+
+  lastMarketQuery = query;
+  status.textContent = query
+    ? `Arama sonucu: ${data.items.length} coin`
+    : `${data.items.length} coin gösteriliyor`;
+  pageInfo.textContent = query ? 'Arama modu' : `Sayfa ${data.page}`;
+  prevBtn.disabled = !!query || data.page <= 1;
+  nextBtn.disabled = !!query || data.items.length < marketPerPage;
+
+  if (!data.items.length) {
+    container.innerHTML = '<div class="empty">Coin bulunamadı.</div>';
+    return;
+  }
+
+  container.innerHTML = data.items.map((coin) => {
+    const changeClass = (coin.change24h || 0) >= 0 ? 'up' : 'down';
+    const changeLabel = coin.change24h === null ? '—' : `${coin.change24h.toFixed(2)}%`;
+    const image = coin.image ? `<img class="coin-avatar" src="${coin.image}" alt="${coin.symbol}">` : '<div class="coin-avatar coin-avatar-fallback"></div>';
+    return `
+      <article class="coin-row">
+        <div class="coin-main">
+          ${image}
+          <div>
+            <div class="coin-name">${coin.name}</div>
+            <div class="small muted">${coin.symbol} • #${coin.rank || '—'}</div>
+          </div>
+        </div>
+        <div class="coin-metrics">
+          <strong>${fmtUsd(coin.priceUsd)}</strong>
+          <span class="${changeClass}">${changeLabel}</span>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
 async function loadEvents() {
   const minScore = document.getElementById('minScoreInput').value;
   const onlyWatchlist = document.getElementById('onlyWatchlistCheckbox').checked;
   const type = document.getElementById('typeSelect').value;
+  const query = document.getElementById('eventSearchInput').value.trim();
   document.getElementById('feedStatus').textContent = 'Yükleniyor...';
-  const params = new URLSearchParams({ minScore, onlyWatchlist, type });
+  const params = new URLSearchParams({ minScore, onlyWatchlist, type, query });
   const { events } = await fetchJson(`/api/events?${params.toString()}`);
   const container = document.getElementById('events');
   document.getElementById('feedStatus').textContent = `${events.length} olay`;
@@ -103,7 +166,7 @@ async function loadEvents() {
 async function refreshNow() {
   document.getElementById('feedStatus').textContent = 'Yenileniyor...';
   await fetchJson('/api/refresh', { method: 'POST' });
-  await Promise.all([loadWatchlist(), loadEvents()]);
+  await Promise.all([loadWatchlist(), loadAllCoins(), loadEvents()]);
 }
 
 async function registerServiceWorker() {
@@ -151,6 +214,9 @@ async function logout() {
 function bindEvents() {
   const minScoreInput = document.getElementById('minScoreInput');
   const minScoreValue = document.getElementById('minScoreValue');
+  const marketSearchInput = document.getElementById('marketSearchInput');
+  const eventSearchInput = document.getElementById('eventSearchInput');
+
   minScoreInput.addEventListener('input', () => {
     minScoreValue.textContent = minScoreInput.value;
   });
@@ -161,6 +227,38 @@ function bindEvents() {
   document.getElementById('enablePushBtn').addEventListener('click', enablePush);
   document.getElementById('testPushBtn').addEventListener('click', testPush);
   document.getElementById('logoutBtn').addEventListener('click', logout);
+
+  marketSearchInput.addEventListener('input', debounce(() => {
+    marketPage = 1;
+    loadAllCoins();
+  }, 500));
+  eventSearchInput.addEventListener('input', debounce(loadEvents, 400));
+  document.getElementById('marketPerPageSelect').addEventListener('change', (e) => {
+    marketPerPage = Number(e.target.value || 100);
+    marketPage = 1;
+    loadAllCoins();
+  });
+  document.getElementById('prevPageBtn').addEventListener('click', () => {
+    if (marketPage > 1) {
+      marketPage -= 1;
+      loadAllCoins();
+    }
+  });
+  document.getElementById('nextPageBtn').addEventListener('click', () => {
+    marketPage += 1;
+    loadAllCoins();
+  });
+}
+
+function startAutoRefresh() {
+  clearInterval(eventTimer);
+  clearInterval(marketTimer);
+  eventTimer = setInterval(() => {
+    loadEvents().catch(() => {});
+  }, 30000);
+  marketTimer = setInterval(() => {
+    Promise.all([loadWatchlist(), loadAllCoins()]).catch(() => {});
+  }, 20000);
 }
 
 window.addEventListener('load', async () => {
@@ -168,7 +266,8 @@ window.addEventListener('load', async () => {
     await registerServiceWorker();
     bindEvents();
     await loadStatus();
-    await Promise.all([loadWatchlist(), loadEvents()]);
+    await Promise.all([loadWatchlist(), loadAllCoins(), loadEvents()]);
+    startAutoRefresh();
   } catch (error) {
     document.getElementById('feedStatus').textContent = error.message;
   }
